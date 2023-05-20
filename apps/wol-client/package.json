@@ -1,0 +1,37 @@
+{
+  "name": "wol-client",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./dist/index.js",
+  "source": "./src/index.ts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node ./dist/index.js\"",
+    "clean": "node ../../deleteFolder.js .turbo node_modules dist",
+    "start": "node ./dist/index.js",
+    "lint": "tsc"
+  },
+  "keywords": [],
+  "author": "Oliver Petersen",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.2.1",
+    "@types/ws": "^8.5.4",
+    "tsconfig": "*",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4",
+    "wol-server": "*"
+  },
+  "dependencies": {
+    "@trpc/client": "^10.26.0",
+    "env": "*",
+    "superjson": "^1.12.3",
+    "ws": "^8.13.0",
+    "zod": "^3.21.4"
+  }
+}

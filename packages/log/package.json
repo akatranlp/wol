@@ -1,0 +1,23 @@
+{
+    "name": "log",
+    "version": "0.0.1",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "source": "./src/index.ts",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "dist/**"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format cjs,esm --dts",
+        "lint": "tsc",
+        "clean": "node ../../deleteFolder.js .turbo node_modules dist",
+        "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    },
+    "devDependencies": {
+        "tsconfig": "*",
+        "typescript": "^4.8.3",
+        "tsup": "^6.2.3"
+    },
+    "license": "MIT"
+}

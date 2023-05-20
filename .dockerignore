@@ -1,0 +1,15 @@
+deleteFolder.js
+
+.git
+*Dockerfile*
+*docker-compose*
+node_modules
+
+*/**/dist/
+*/**/.turbo/
+
+*/**/config.json
+*/**/config-test.json
+*/**/out
+
+*/**/.env
