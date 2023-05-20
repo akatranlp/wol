@@ -1,6 +1,7 @@
 {
-    "name": "tsconfig",
-    "version": "0.0.1",
-    "private": true,
-    "license": "MIT"
+  "name": "tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "author": "akatranlp",
+  "license": "MIT"
 }

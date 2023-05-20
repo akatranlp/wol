@@ -11,16 +11,17 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node ./dist/index.js\"",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node ./dist/index.js 192.168.20.10 D4-5D-64-D4-30-09\"",
     "clean": "node ../../deleteFolder.js .turbo node_modules dist",
     "start": "node ./dist/index.js",
     "lint": "tsc"
   },
   "keywords": [],
-  "author": "Oliver Petersen",
+  "author": "akatranlp",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.2.1",
+    "@types/uuid": "^9.0.1",
     "@types/ws": "^8.5.4",
     "tsconfig": "*",
     "tsup": "^6.7.0",
@@ -29,8 +30,12 @@
   },
   "dependencies": {
     "@trpc/client": "^10.26.0",
-    "env": "*",
+    "create-env": "*",
+    "dotenv": "^16.0.3",
     "superjson": "^1.12.3",
+    "utils": "*",
+    "log": "*",
+    "uuid": "^9.0.0",
     "ws": "^8.13.0",
     "zod": "^3.21.4"
   }

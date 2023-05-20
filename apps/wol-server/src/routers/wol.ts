@@ -4,11 +4,34 @@ import { publicProcedure, router } from "../server/trpc";
 import { exec } from "child_process";
 import EventEmitter from "events";
 import { observable } from "@trpc/server/observable";
+import { macSchema, ipSchema } from "utils";
+import { createLogger } from "log";
 
-const ee = new EventEmitter();
+const log = createLogger("WOL");
 
-const macSchema = z.string().regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/);
-const ipSchema = z.string().regex(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/);
+type WOLResponse = {
+  uuid: string;
+  ipAddress: string;
+  mac: string;
+  success: boolean;
+};
+
+class MyEventEmitter extends EventEmitter {
+  override on(eventname: "ping", listener: (data: WOLResponse) => void) {
+    super.on(eventname, listener);
+    return this;
+  }
+
+  override off(eventname: "ping", listener: (data: WOLResponse) => void) {
+    super.off(eventname, listener);
+    return this;
+  }
+
+  override emit(eventname: "ping", data: WOLResponse) {
+    return super.emit(eventname, data);
+  }
+}
+const ee = new MyEventEmitter();
 
 const sendMagicPacket = async (mac: string, ipAdress: string) => {
   const packet = Buffer.from("ff".repeat(6) + mac.replaceAll(mac[2], "").repeat(16), "hex");
@@ -27,54 +50,49 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 const tryPing = async (ipAddress: string) => {
   try {
-    await new Promise<string>((res, rej) =>
-      exec(`ping -c 3 ${ipAddress}`, (err, stdout, stderr) => {
+    await new Promise<string>((res, rej) => {
+      const command = process.platform === "win32" ? "ping" : "ping -c 3";
+      exec(`${command} ${ipAddress}`, (err, stdout, stderr) => {
         if (err) return rej(err);
         if (stderr) return rej(err);
         return res(stdout);
-      })
-    );
+      });
+    });
     return true;
   } catch (_) {
     return false;
   }
 };
 
-const waitTillOnline = async (ipAddress: string) => {
+const waitTillOnline = async (ipAddress: string, mac: string, uuid: string) => {
   await delay(2000);
   for (let i = 3; i > 0; i--) {
-    console.log("try ping now", i);
     if (await tryPing(ipAddress)) {
-      return ee.emit("ping", { success: true });
+      return ee.emit("ping", { success: true, uuid, ipAddress, mac });
     }
     await delay(2000);
   }
-  return ee.emit("ping", { success: false });
+  return ee.emit("ping", { success: false, uuid, ipAddress, mac });
 };
 
-type WOLResponse = {
-  success: boolean;
-};
-
-ee.on("ping", (data: WOLResponse) => {
-  console.log("ping", data.success);
+ee.on("ping", ({ ipAddress, mac, success }) => {
+  log(`Server with ipAddress: ${ipAddress} and mac: ${mac} was ${success ? "" : "not "}started`);
 });
 
 export const wolRouter = router({
-  startServer: publicProcedure.input(z.object({ mac: macSchema, ipAddress: ipSchema })).mutation(async ({ input }) => {
-    const { mac, ipAddress } = input;
+  startServer: publicProcedure.input(z.object({ mac: macSchema, ipAddress: ipSchema, uuid: z.string().uuid() })).mutation(async ({ input }) => {
+    const { mac, ipAddress, uuid } = input;
 
     await sendMagicPacket(mac, ipAddress);
 
-    waitTillOnline(ipAddress);
+    waitTillOnline(ipAddress, mac, uuid);
 
     return { success: true };
   }),
-  watchServer: publicProcedure.subscription(() =>
+  watchServer: publicProcedure.input(z.object({ uuid: z.string().uuid() })).subscription(({ input }) =>
     observable<WOLResponse>((emit) => {
       const onPing = (data: WOLResponse) => {
-        console.log("send ping");
-        emit.next(data);
+        if (data.uuid === input.uuid) emit.next(data);
       };
 
       ee.on("ping", onPing);

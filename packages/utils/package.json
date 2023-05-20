@@ -1,11 +1,11 @@
 {
-  "name": "create-env",
+  "name": "utils",
   "version": "0.0.1",
+  "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "source": "./src/index.ts",
   "types": "./dist/index.d.ts",
-  "private": true,
   "files": [
     "dist/**"
   ],
@@ -17,9 +17,12 @@
   },
   "devDependencies": {
     "tsconfig": "*",
-    "typescript": "^4.8.3",
-    "tsup": "^6.2.3"
+    "tsup": "^6.2.3",
+    "typescript": "^4.8.3"
   },
   "author": "akatranlp",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.21.4"
+  }
 }
