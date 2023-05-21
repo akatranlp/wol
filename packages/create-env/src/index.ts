@@ -4,6 +4,10 @@ type ProxyType = "number" | "boolean" | "stringArray" | "numberArray";
 type ProxyObj = { type?: ProxyType };
 type ZodTypeWithProxy = ZodType & ProxyObj;
 
+type Simplify<T> = {
+  [P in keyof T]: T[P];
+} & {};
+
 export interface BaseOptions<TEnv extends Record<string, ZodType>> {
   runtimeEnv?: Record<string, string | undefined>;
   vars: TEnv;
@@ -37,10 +41,8 @@ export const zEnv = {
   enum: (...args: Parameters<typeof z.enum>) => z.enum(...args),
   number: (...args: Parameters<typeof z.number>) => new Proxy(z.number(...args), zEnvHandler("number")),
   boolean: (...args: Parameters<typeof z.boolean>) => new Proxy(z.boolean(...args), zEnvHandler("boolean")),
-  stringArray: (v?: z.ZodString, params?: z.RawCreateParams) =>
-    new Proxy(z.array(v ?? z.string(), params), zEnvHandler("stringArray")),
-  numberArray: (v?: z.ZodNumber, params?: z.RawCreateParams) =>
-    new Proxy(z.array(v ?? z.number(), params), zEnvHandler("numberArray")),
+  stringArray: (v?: z.ZodString, params?: z.RawCreateParams) => new Proxy(z.array(v ?? z.string(), params), zEnvHandler("stringArray")),
+  numberArray: (v?: z.ZodNumber, params?: z.RawCreateParams) => new Proxy(z.array(v ?? z.number(), params), zEnvHandler("numberArray")),
 };
 
 const numberValidator = (v: ZodType) =>
@@ -69,21 +71,14 @@ const numberArrayValidator = (v: ZodType) =>
   z
     .string()
     .optional()
-    .transform((val) =>
-      val == undefined || val === "" ? undefined : val.split(",").map((e) => parseInt(e.trim(), 10))
-    )
+    .transform((val) => (val == undefined || val === "" ? undefined : val.split(",").map((e) => parseInt(e.trim(), 10))))
     .pipe(v);
 
-export function createEnv<TEnv extends Record<string, ZodTypeWithProxy>>(
-  opts: BaseOptions<TEnv>
-): z.infer<ZodObject<TEnv>> {
+export function createEnv<TEnv extends Record<string, ZodTypeWithProxy>>(opts: BaseOptions<TEnv>): z.infer<ZodObject<TEnv>> {
   const runtimeEnv = opts.runtimeEnv ?? process.env;
 
   const skip =
-    opts.skipValidation ??
-    (!!runtimeEnv.SKIP_ENV_VALIDATION &&
-      runtimeEnv.SKIP_ENV_VALIDATION !== "false" &&
-      runtimeEnv.SKIP_ENV_VALIDATION !== "0");
+    opts.skipValidation ?? (!!runtimeEnv.SKIP_ENV_VALIDATION && runtimeEnv.SKIP_ENV_VALIDATION !== "false" && runtimeEnv.SKIP_ENV_VALIDATION !== "0");
 
   if (skip) return runtimeEnv as any;
 

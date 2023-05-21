@@ -1,6 +1,7 @@
 import { env } from "./env";
 import express from "express";
 import http from "http";
+import cors from "cors";
 import { WebSocketServer } from "ws";
 import { appRouter } from "./server/appRouter";
 import { createContext } from "./server/trpc";
@@ -14,6 +15,9 @@ const log = createLogger("Main");
 export { type AppRouter };
 
 const app = express();
+
+app.use(cors());
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 

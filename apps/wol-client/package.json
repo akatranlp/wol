@@ -29,12 +29,12 @@
     "wol-server": "*"
   },
   "dependencies": {
-    "@trpc/client": "^10.26.0",
+    "@trpc/client": "^10.27.1",
     "create-env": "*",
     "dotenv": "^16.0.3",
+    "log": "*",
     "superjson": "^1.12.3",
     "utils": "*",
-    "log": "*",
     "uuid": "^9.0.0",
     "ws": "^8.13.0",
     "zod": "^3.21.4"
