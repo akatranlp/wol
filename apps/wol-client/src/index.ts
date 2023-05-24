@@ -1,5 +1,5 @@
 import { createTRPCProxyClient, httpBatchLink, createWSClient, wsLink, splitLink } from "@trpc/client";
-import type { AppRouter } from "wol-server";
+import type { AppRouter } from "../../wol-server/src/index";
 import superjson from "superjson";
 import { env } from "./env";
 import { macSchema, ipSchema } from "utils";

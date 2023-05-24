@@ -1,37 +1,13 @@
 import z from "zod";
 import DgramAsPromised from "dgram-as-promised";
-import { publicProcedure, router } from "../server/trpc";
+import { publicProcedure, router, type WOLResponse } from "../server/trpc";
 import { exec } from "child_process";
-import EventEmitter from "events";
 import { observable } from "@trpc/server/observable";
 import { macSchema, ipSchema } from "utils";
 import { createLogger } from "log";
+import EventEmitter from "events";
 
 const log = createLogger("WOL");
-
-type WOLResponse = {
-  uuid: string;
-  ipAddress: string;
-  mac: string;
-  success: boolean;
-};
-
-class MyEventEmitter extends EventEmitter {
-  override on(eventname: "ping", listener: (data: WOLResponse) => void) {
-    super.on(eventname, listener);
-    return this;
-  }
-
-  override off(eventname: "ping", listener: (data: WOLResponse) => void) {
-    super.off(eventname, listener);
-    return this;
-  }
-
-  override emit(eventname: "ping", data: WOLResponse) {
-    return super.emit(eventname, data);
-  }
-}
-const ee = new MyEventEmitter();
 
 const sendMagicPacket = async (mac: string, ipAdress: string) => {
   const packet = Buffer.from("ff".repeat(6) + mac.replaceAll(mac[2], "").repeat(16), "hex");
@@ -64,7 +40,7 @@ const tryPing = async (ipAddress: string) => {
   }
 };
 
-const waitTillOnline = async (ipAddress: string, mac: string, uuid: string) => {
+const waitTillOnline = async (ipAddress: string, mac: string, uuid: string, ee: EventEmitter) => {
   await delay(2000);
   for (let i = 3; i > 0; i--) {
     if (await tryPing(ipAddress)) {
@@ -75,21 +51,19 @@ const waitTillOnline = async (ipAddress: string, mac: string, uuid: string) => {
   return ee.emit("ping", { success: false, uuid, ipAddress, mac });
 };
 
-ee.on("ping", ({ ipAddress, mac, success }) => {
-  log(`Server with ipAddress: ${ipAddress} and mac: ${mac} was ${success ? "" : "not "}started`);
-});
-
 export const wolRouter = router({
-  startServer: publicProcedure.input(z.object({ mac: macSchema, ipAddress: ipSchema, uuid: z.string().uuid() })).mutation(async ({ input }) => {
-    const { mac, ipAddress, uuid } = input;
+  startServer: publicProcedure
+    .input(z.object({ mac: macSchema, ipAddress: ipSchema, uuid: z.string().uuid() }))
+    .mutation(async ({ input, ctx: { ee } }) => {
+      const { mac, ipAddress, uuid } = input;
 
-    await sendMagicPacket(mac, ipAddress);
+      await sendMagicPacket(mac, ipAddress);
 
-    waitTillOnline(ipAddress, mac, uuid);
+      waitTillOnline(ipAddress, mac, uuid, ee);
 
-    return { success: true };
-  }),
-  watchServer: publicProcedure.input(z.object({ uuid: z.string().uuid() })).subscription(({ input }) =>
+      return { success: true };
+    }),
+  watchServer: publicProcedure.input(z.object({ uuid: z.string().uuid() })).subscription(({ input, ctx: { ee } }) =>
     observable<WOLResponse>((emit) => {
       const onPing = (data: WOLResponse) => {
         if (data.uuid === input.uuid) emit.next(data);

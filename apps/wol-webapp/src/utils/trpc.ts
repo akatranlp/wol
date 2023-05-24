@@ -2,7 +2,7 @@ import { createTRPCReact, createWSClient, httpBatchLink, splitLink, wsLink } fro
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { Observable } from "@trpc/server/observable";
 import superjson from "superjson";
-import type { AppRouter } from "wol-server";
+import type { AppRouter } from "../../../wol-server/src/index";
 import { z } from "zod";
 
 export type RouterInput = inferRouterInputs<AppRouter>;
@@ -43,10 +43,18 @@ const wsClient = createWSClient({
   url: `ws://${env.hostname}:${env.port}`,
 });
 
+void httpBatchLink;
+void splitLink;
+
 export const trpcClient = trpc.createClient({
   transformer: superjson,
   links: [
-    splitLink({
+    wsLink({
+      client: wsClient!,
+    }),
+
+    // split link is not needed, all commands would be sent over the websocket connection
+    /* splitLink({
       condition(op) {
         return op.type === "subscription";
       },
@@ -56,6 +64,6 @@ export const trpcClient = trpc.createClient({
       false: httpBatchLink({
         url: `http://${env.hostname}:${env.port}/trpc`,
       }),
-    }),
+    }), */
   ],
 });

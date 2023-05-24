@@ -1,6 +1,6 @@
 import z, { type ZodError, type ZodObject, type ZodType } from "zod";
 
-type ProxyType = "number" | "boolean" | "stringArray" | "numberArray";
+type ProxyType = "boolean" | "stringArray" | "numberArray";
 type ProxyObj = { type?: ProxyType };
 type ZodTypeWithProxy = ZodType & ProxyObj;
 
@@ -39,18 +39,11 @@ const zEnvHandler = <TZod extends ZodType>(type: ProxyType) => ({
 export const zEnv = {
   string: (...args: Parameters<typeof z.string>) => z.string(...args),
   enum: (...args: Parameters<typeof z.enum>) => z.enum(...args),
-  number: (...args: Parameters<typeof z.number>) => new Proxy(z.number(...args), zEnvHandler("number")),
+  number: (...args: Parameters<typeof z.number>) => z.coerce.number(...args),
   boolean: (...args: Parameters<typeof z.boolean>) => new Proxy(z.boolean(...args), zEnvHandler("boolean")),
   stringArray: (v?: z.ZodString, params?: z.RawCreateParams) => new Proxy(z.array(v ?? z.string(), params), zEnvHandler("stringArray")),
   numberArray: (v?: z.ZodNumber, params?: z.RawCreateParams) => new Proxy(z.array(v ?? z.number(), params), zEnvHandler("numberArray")),
 };
-
-const numberValidator = (v: ZodType) =>
-  z
-    .string()
-    .optional()
-    .transform((val) => (val == undefined ? undefined : parseInt(val, 10)))
-    .pipe(v);
 
 const booleanValidator = (v: ZodType) =>
   z
@@ -98,9 +91,6 @@ export function createEnv<TEnv extends Record<string, ZodTypeWithProxy>>(opts: B
         break;
       case "boolean":
         vars[k] = booleanValidator(v);
-        break;
-      case "number":
-        vars[k] = numberValidator(v);
         break;
       case "stringArray":
         vars[k] = stringArrayValidator(v);
